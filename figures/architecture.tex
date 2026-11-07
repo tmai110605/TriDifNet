@@ -1,0 +1,328 @@
+%% ============================================================
+%%  TriDiffNet – Hình minh họa kiến trúc (TikZ)
+%%  Biên dịch bằng XeLaTeX hoặc LuaLaTeX (Overleaf: Menu > Compiler)
+%%     xelatex TriDiffNet_architecture.tex
+%%  Quy ước màu:
+%%     XANH DƯƠNG = kế thừa TickNet      (T)
+%%     XANH LÁ    = kế thừa NetTOP       (N)
+%%     CAM        = kế thừa FullAttNet   (F)
+%%     ĐỎ         = ĐÓNG GÓP MỚI của TriDiffNet (NEW)
+%% ============================================================
+\documentclass[tikz,border=14pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{Latin Modern Sans}   % hỗ trợ đầy đủ tiếng Việt
+\setsansfont{Latin Modern Sans}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usetikzlibrary{arrows.meta,calc,backgrounds,decorations.pathreplacing}
+
+% ---------- Màu sắc ----------
+\definecolor{colTick}{RGB}{31,119,180}
+\definecolor{colNet}{RGB}{34,150,70}
+\definecolor{colAtt}{RGB}{240,125,15}
+\definecolor{colNew}{RGB}{205,30,60}
+\definecolor{colPanel}{RGB}{247,248,252}
+
+% ---------- Style ----------
+\tikzset{
+  base/.style={draw, rounded corners=6pt, line width=1.3pt, align=center,
+               font=\large, inner sep=5pt, minimum height=1.1cm},
+  neutral/.style={base, draw=black!55, fill=black!7},
+  tick/.style={base, draw=colTick, fill=colTick!13},
+  netp/.style={base, draw=colNet,  fill=colNet!13},
+  attn/.style={base, draw=colAtt,  fill=colAtt!15},
+  new/.style={base,  draw=colNew,  fill=colNew!12, line width=2.2pt},
+  flow/.style={-{Stealth[length=3.2mm,width=2.6mm]}, line width=1.5pt, draw=black!70},
+  res/.style={flow, dashed, draw=colTick!85!black, line width=1.7pt},
+  zoom/.style={-{Stealth[length=3.5mm]}, dashed, line width=1.8pt, draw=colNew},
+  zoomthin/.style={dashed, line width=1pt, draw=colNew!60},
+  op/.style={circle, draw=black!75, fill=white, line width=1.5pt,
+             inner sep=1.5pt, font=\Large},
+  badge/.style={circle, text=white, font=\footnotesize\bfseries, inner sep=2pt,
+                draw=white, line width=0.7pt},
+  tagn/.style={rounded corners=3pt, fill=colNew, text=white, font=\footnotesize\bfseries,
+               inner sep=2.5pt, draw=white, line width=0.7pt},
+}
+% \badge[dịch-x]{node}{màu}{chữ}  – huy hiệu nguồn kế thừa
+\newcommand{\badge}[4][0]{\node[badge, fill=#3] at ($(#2.north east)+(#1,0)$) {#4};}
+% \tagn[dịch-x]{node}{chữ}        – nhãn "MỚI" / "CẢI TIẾN"
+\newcommand{\tagnew}[3][0]{\node[tagn] at ($(#2.north east)+(#1,0)$) {#3};}
+
+\begin{document}
+\begin{tikzpicture}[x=1cm,y=1cm]
+
+%% ============================================================
+%%  TIÊU ĐỀ + CHÚ GIẢI
+%% ============================================================
+\node[font=\fontsize{34}{40}\selectfont\bfseries, text=black!85]
+  at (20,5.0) {TriDiffNet: Kiến trúc và nguồn gốc kế thừa};
+\node[font=\Large, text=black!60] at (20,3.5)
+  {Tri-Axial Strip Attention + 3D Tensor Differential trên khung \textit{Full-Residual / Multi-stride}};
+
+% Legend
+\node[draw=colTick, fill=colTick!13, rounded corners=4pt, line width=1.4pt, minimum width=1.1cm, minimum height=0.7cm] (l1) at (0.8,1.7) {};
+\badge{l1}{colTick}{T}
+\node[anchor=west,font=\large] at (1.6,1.7) {Kế thừa \textbf{TickNet}};
+\node[draw=colNet, fill=colNet!13, rounded corners=4pt, line width=1.4pt, minimum width=1.1cm, minimum height=0.7cm] (l2) at (8.6,1.7) {};
+\badge{l2}{colNet}{N}
+\node[anchor=west,font=\large] at (9.4,1.7) {Kế thừa \textbf{NetTOP}};
+\node[draw=colAtt, fill=colAtt!15, rounded corners=4pt, line width=1.4pt, minimum width=1.1cm, minimum height=0.7cm] (l3) at (16.4,1.7) {};
+\badge{l3}{colAtt}{F}
+\node[anchor=west,font=\large] at (17.2,1.7) {Kế thừa \textbf{FullAttNet}};
+\node[draw=colNew, fill=colNew!12, rounded corners=4pt, line width=2.2pt, minimum width=1.1cm, minimum height=0.7cm] (l4) at (25.6,1.7) {};
+\tagnew{l4}{NEW}
+\node[anchor=west,font=\large] at (26.4,1.7) {\textbf{Đóng góp mới} của TriDiffNet};
+\draw[res] (36.0,1.7) -- (37.6,1.7);
+\node[anchor=west,font=\large] at (37.8,1.7) {residual};
+
+%% ============================================================
+%%  (a) KIẾN TRÚC TỔNG THỂ
+%% ============================================================
+\begin{scope}[on background layer]
+  \draw[rounded corners=12pt, line width=1pt, draw=black!30, fill=colPanel]
+       (-0.5,0.3) rectangle (40.9,-7.4);
+\end{scope}
+\node[anchor=north west, font=\LARGE\bfseries] at (-0.2,0.15)
+  {(a) Kiến trúc tổng thể \normalfont\large\;---\; ảnh vào $224{\times}224$ (hoặc $32{\times}32$ với CIFAR)};
+
+\node[neutral, minimum width=3.1cm, minimum height=2.8cm] (in)   at (1.5,-3.4)  {Ảnh vào\\[2pt] $224{\times}224{\times}3$};
+\node[tick,    minimum width=3.1cm, minimum height=2.8cm] (bn)   at (5.1,-3.4)  {\textbf{Data}\\ \textbf{BatchNorm}};
+\node[tick,    minimum width=3.1cm, minimum height=2.8cm] (stem) at (8.7,-3.4)  {\textbf{Stem}\\ Conv$3{\times}3$\\ $C{=}32,\ s{=}2$};
+\node[new,     minimum width=3.1cm, minimum height=2.8cm] (s1)   at (12.3,-3.4) {\textbf{Stage 1}\\ {\normalsize $[48]$}\\ $s{=}1$};
+\node[new,     minimum width=3.1cm, minimum height=2.8cm] (s2)   at (15.9,-3.4) {\textbf{Stage 2}\\ {\normalsize $[64,96]$}\\ $s{=}2$};
+\node[new,     minimum width=3.1cm, minimum height=2.8cm] (s3)   at (19.5,-3.4) {\textbf{Stage 3}\\ {\normalsize $[144,192,144]$}\\ $s{=}2$};
+\node[new,     minimum width=3.1cm, minimum height=2.8cm] (s4)   at (23.1,-3.4) {\textbf{Stage 4}\\ {\normalsize $[256,288]$}\\ $s{=}2$};
+\node[new,     minimum width=3.1cm, minimum height=2.8cm] (s5)   at (26.7,-3.4) {\textbf{Stage 5}\\ {\normalsize $[384]$}\\ $s{=}2$};
+\node[tick,    minimum width=3.1cm, minimum height=2.8cm] (fin)  at (30.3,-3.4) {\textbf{Final Conv}\\ $1{\times}1\to512$\\ ReLU};
+\node[attn,    minimum width=3.1cm, minimum height=2.8cm] (gap)  at (33.9,-3.4) {\textbf{Dropout2d}\\ \textbf{GAP}\\ \textbf{Dropout2d}\\ {\normalsize $p{=}0.2$}};
+\node[tick,    minimum width=3.1cm, minimum height=2.8cm] (cls)  at (37.5,-3.4) {\textbf{Classifier}\\ Linear\\ $\to$ \#lớp};
+
+\foreach \a/\b in {in/bn,bn/stem,stem/s1,s1/s2,s2/s3,s3/s4,s4/s5,s5/fin,fin/gap,gap/cls}
+  \draw[flow] (\a.east) -- (\b.west);
+
+% huy hiệu nguồn gốc (panel a)
+\badge{bn}{colTick}{T}
+\badge{stem}{colTick}{T}
+\badge{fin}{colTick}{T}
+\badge{cls}{colTick}{T}
+\badge{gap}{colAtt}{F}
+\badge[-0.65]{gap}{colTick}{T}
+\foreach \s in {s1,s2,s3,s4,s5}{ \tagnew{\s}{NEW} }
+
+% brace dưới 5 stage
+\draw[decorate, decoration={brace, amplitude=9pt, mirror}, line width=1.6pt, colNew]
+  ($(s1.south west)+(0,-0.25)$) -- ($(s5.south east)+(0,-0.25)$)
+  node[midway, below=14pt, font=\large, text=colNew!85!black, align=center]
+  {5 stage $=$ 9 $\times$ \textbf{TriDiffBlock}\quad
+   (\textit{compact}: $\approx$1,49M tham số $\cdot$ \textit{ultra}: $\approx$1,05M)};
+
+% mũi tên phóng to sang (b)
+\draw[zoom] (11.0,-5.55) to[out=-110,in=70] (8.2,-8.3);
+\node[font=\normalsize\itshape, text=colNew!85!black] at (5.6,-6.9) {phóng to 1 khối};
+
+%% ============================================================
+%%  (b) + (c)
+%% ============================================================
+\begin{scope}[shift={(0,-0.9)}]
+
+% ---- khung ----
+\begin{scope}[on background layer]
+  \draw[rounded corners=12pt, line width=1pt, draw=black!30, fill=colPanel]
+       (-0.5,-7.3) rectangle (15.3,-36.0);
+  \draw[rounded corners=12pt, line width=1pt, draw=black!30, fill=colPanel]
+       (16.0,-7.3) rectangle (40.9,-36.0);
+  % đường phóng to khối TriDiffModule -> panel (c)
+  \draw[zoomthin] (12.7,-25.3) -- (16.0,-7.3);
+  \draw[zoomthin] (12.7,-27.5) -- (16.0,-36.0);
+\end{scope}
+
+%% ---------------- (b) TriDiffBlock ----------------
+\node[anchor=north west, font=\LARGE\bfseries] at (-0.2,-7.4) {(b) TriDiffBlock};
+
+\node[neutral, minimum width=5.6cm] (xin) at (8.2,-10.0) {$x\in\mathbb{R}^{C_{in}\times H\times W}$};
+
+\node[tick, minimum width=9.4cm, minimum height=1.6cm] (pw1) at (8.2,-12.6)
+  {\textbf{Pw1}: Conv$1{\times}1$ (không BN/act)\\ {\normalsize nhóm \texttt{groups}$=2$ nếu $C\ge192$}};
+\badge{pw1}{colTick}{T}
+\badge[-0.65]{pw1}{colNet}{N}
+
+\node[tick, minimum width=4.8cm, minimum height=1.4cm] (dw1) at (5.0,-15.8)
+  {\textbf{Dw1} $3{\times}3$\\ stride $s$};
+\badge{dw1}{colTick}{T}
+\badge[-0.65]{dw1}{colAtt}{F}
+
+\node[attn, minimum width=5.0cm, minimum height=1.4cm] (dw2) at (11.4,-15.8)
+  {\textbf{Dw2} $3{\times}3$\\ stride $2$ (khi $s{=}1$)};
+\badge{dw2}{colAtt}{F}
+
+\node[attn, minimum width=5.0cm, minimum height=0.9cm] (up) at (11.4,-18.1)
+  {Upsample (nearest)};
+
+\node[attn, minimum width=10.4cm, minimum height=1.4cm] (gate) at (8.2,-20.7)
+  {Cổng nhân: $\mathrm{ReLU}\!\big(x_1\odot\sigma(x_2)\big)$};
+\badge{gate}{colAtt}{F}
+\tagnew[-1.6]{gate}{RÚT GỌN 3→2 NHÁNH}
+
+\node[tick, minimum width=9.4cm, minimum height=1.2cm] (pw2) at (8.2,-23.1)
+  {\textbf{Pw2}: Conv$1{\times}1$ + BN + ReLU};
+\badge{pw2}{colTick}{T}
+
+\node[new, minimum width=9.2cm, minimum height=2.2cm] (tri) at (8.2,-26.4)
+  {\LARGE\textbf{TriDiffModule}\\[2pt] TASA $\;\oplus\;$ TensorDiff3D\\ {\normalsize (chi tiết ở panel (c))}};
+\tagnew{tri}{NEW}
+
+\node[op] (add) at (8.2,-30.0) {$+$};
+\badge{add}{colTick}{T}
+
+\node[neutral, minimum width=5.8cm] (outb) at (8.2,-32.3)
+  {$y\in\mathbb{R}^{C_{out}\times H'\times W'}$};
+
+\node[tick, minimum width=2.3cm, minimum height=2.4cm, inner sep=3pt] (pwr) at (1.3,-22.9)
+  {\textbf{PwR}\\ $1{\times}1$\\ stride $s$};
+\badge{pwr}{colTick}{T}
+\node[anchor=west, font=\small, text=colTick!80!black, text width=2.4cm, align=left]
+  at (1.65,-27.2) {\textit{identity} nếu $s{=}1$ và $C_{in}{=}C_{out}$};
+
+\node[font=\normalsize\itshape, text=black!65, text width=14cm, align=center]
+  at (7.4,-34.6) {Khi $s{=}2$: bỏ nhánh Dw2, $x=x_1$ (giảm độ phân giải)};
+
+% luồng chính (b)
+\draw[flow] (xin) -- (pw1);
+\draw[flow] (pw1.south) -- ++(0,-0.45) -| (dw1.north);
+\draw[flow] (pw1.south) -- ++(0,-0.45) -| (dw2.north);
+\draw[flow] (dw1.south) -- (dw1.south |- gate.north);
+\draw[flow] (dw2.south) -- (up.north);
+\draw[flow] (up.south) -- (up.south |- gate.north);
+\draw[flow] (gate) -- (pw2);
+\draw[flow] (pw2) -- (tri);
+\draw[flow] (tri) -- (add);
+\draw[flow] (add) -- (outb);
+% residual
+\draw[res] (xin.west) -| (pwr.north);
+\draw[res] (pwr.south) |- (add.west);
+
+%% ---------------- (c) TriDiffModule ----------------
+\node[anchor=north west, font=\LARGE\bfseries] at (16.3,-7.4)
+  {(c) TriDiffModule: TASA $+$ TensorDiff3D};
+
+\node[neutral, minimum width=6cm] (xc) at (28,-10.0) {$x\in\mathbb{R}^{C\times H\times W}$};
+
+% --- Nhánh 1: Tri-Axial Strip Attention - cổng không gian ---
+\node[new, minimum width=3.8cm, minimum height=1.9cm] (hs) at (19.8,-13.1)
+  {\textbf{Mean $\oplus$ Std}\\ dọc theo $W$\\ {\normalsize $2C{\times}H{\times}1$}};
+\node[new, minimum width=3.8cm, minimum height=1.9cm] (ws) at (24.0,-13.1)
+  {\textbf{Mean $\oplus$ Std}\\ dọc theo $H$\\ {\normalsize $2C{\times}1{\times}W$}};
+\badge{hs}{colAtt}{F}
+\tagnew[-0.9]{hs}{NEW}
+\node[new, minimum width=3.8cm, minimum height=1.4cm] (hc) at (19.8,-16.2)
+  {Conv $\mathbf{3{\times}1}$\\ {\normalsize $2C\to C/r$}};
+\node[new, minimum width=3.8cm, minimum height=1.4cm] (wc) at (24.0,-16.2)
+  {Conv $\mathbf{1{\times}3}$\\ {\normalsize $2C\to C/r$}};
+\node[new, minimum width=8.2cm, minimum height=1.6cm] (mg) at (21.9,-19.2)
+  {\textbf{Cộng broadcast} $(H{\times}1)+(1{\times}W)$\\ BN $\to$ ReLU6};
+\node[new, minimum width=8.2cm, minimum height=1.5cm] (pj) at (21.9,-22.0)
+  {Conv$1{\times}1$ ($\to C$) + Sigmoid\\ \textbf{cổng không gian} $G_s$};
+
+% --- Nhánh 2: cổng kênh kiểu SE ---
+\node[tick, minimum width=4.6cm, minimum height=1.6cm] (c1) at (29.8,-13.1)
+  {Global Avg Pool\\ {\normalsize $C{\times}1{\times}1$}};
+\badge{c1}{colTick}{T}
+\badge[-0.65]{c1}{colNet}{N}
+\node[tick, minimum width=4.6cm, minimum height=1.4cm] (c2) at (29.8,-16.2)
+  {Conv$1{\times}1$ $C\to C/r$\\ BN $\to$ ReLU6};
+\node[tick, minimum width=4.6cm, minimum height=1.4cm] (c3) at (29.8,-19.2)
+  {Conv$1{\times}1$ $C/r\to C$\\ Sigmoid};
+\node[tick, minimum width=4.6cm, minimum height=1.5cm] (gc) at (29.8,-22.0)
+  {\textbf{cổng kênh} $G_c$\\ {\normalsize $C{\times}1{\times}1$}};
+
+% --- Nhánh 3: 3D Tensor Differential ---
+\node[new, minimum width=5.4cm, minimum height=1.9cm] (d1) at (36.0,-13.1)
+  {\textbf{Sai phân hữu hạn}\\ $\Delta_H,\ \Delta_W,\ \Delta_C$\\ {\normalsize (cả chiều kênh)}};
+\tagnew{d1}{NEW}
+\node[new, minimum width=5.4cm, minimum height=1.4cm] (d2) at (36.0,-16.2)
+  {$|\Delta_H|+|\Delta_W|+|\Delta_C|$};
+\node[new, minimum width=5.4cm, minimum height=1.4cm] (d3) at (36.0,-19.2)
+  {$\tanh(\cdot)$};
+\node[new, minimum width=5.4cm, minimum height=1.5cm] (d4) at (36.0,-22.0)
+  {$D=\alpha\odot\tanh(\cdot)$\\ {\normalsize $\alpha$ học được, khởi tạo $0$}};
+\node[font=\normalsize, text=colNew!80!black, text width=5.6cm, align=center]
+  at (36.0,-25.2) {Bắt biên / biến thiên cục bộ theo cả không gian lẫn kênh; $\alpha{=}0$ giúp khởi động ổn định};
+
+% --- toán tử ---
+\node[op] (mul) at (25.8,-28.0) {$\odot$};
+\node[op] (ad2) at (31.5,-31.2) {$+$};
+\node[new, minimum width=9.4cm, minimum height=1.4cm] (outc) at (31.5,-33.9)
+  {\Large $y=x\odot G_s\odot G_c\;+\;\alpha\odot\tanh(|\nabla x|)$};
+
+% mũi tên (c)
+\foreach \t in {hs,ws,c1,d1}
+  \draw[flow] (xc.south) -- ++(0,-0.5) -| (\t.north);
+\draw[flow] (hs) -- (hc);
+\draw[flow] (ws) -- (wc);
+\draw[flow] (hc.south) -- (hc.south |- mg.north);
+\draw[flow] (wc.south) -- (wc.south |- mg.north);
+\draw[flow] (mg) -- (pj);
+\draw[flow] (c1) -- (c2);
+\draw[flow] (c2) -- (c3);
+\draw[flow] (c3) -- (gc);
+\draw[flow] (d1) -- (d2);
+\draw[flow] (d2) -- (d3);
+\draw[flow] (d3) -- (d4);
+% x bypass vào phép nhân
+\draw[flow, draw=black!45] (xc.west) -- (16.8,-10.0) |- (mul.west);
+\node[font=\normalsize, text=black!60, anchor=north west] at (17.0,-28.15) {$x$ (đường tắt)};
+\draw[flow] (pj.south) -- ++(0,-0.6) -| (mul.north);
+\draw[flow] (gc.south) |- (mul.east);
+\draw[flow] (mul.south) |- (ad2.west);
+\draw[flow] (d4.east) -- (39.9,-22.0) |- (ad2.east);
+\draw[flow] (ad2) -- (outc);
+
+\node[anchor=south west, font=\normalsize, text=black!60] at (16.3,-35.9)
+  {$r=16$,\ $C/r\equiv\max(16,\lfloor C/r\rfloor)$};
+
+\end{scope}
+
+%% ============================================================
+%%  BẢNG KẾ THỪA: 4 thẻ
+%% ============================================================
+\newcommand{\lineagecard}[5]{%
+  % #1 = tâm x, #2 = màu, #3 = tiêu đề, #4 = nội dung, #5 = tên node
+  \node[anchor=north, fill=#2, text=white, rounded corners=6pt, minimum width=9.6cm,
+        minimum height=1.2cm, font=\Large\bfseries, inner sep=4pt] (h#5) at (#1,-38.6) {#3};
+  \node[anchor=north, draw=#2, fill=#2!8, line width=1.6pt, rounded corners=6pt,
+        text width=9.0cm, align=left, inner sep=8pt, minimum height=8.6cm, font=\large]
+        at ($(h#5.south)+(0,-0.2)$) {#4};
+}
+\lineagecard{4.9}{colTick}{Kế thừa từ TickNet (T)}{%
+\begin{itemize}[leftmargin=1.1em,nosep,itemsep=3pt]
+ \item \textbf{Khung xương}: Data-BN $\to$ Stem $\to$ 5 stage $\to$ Final Conv $\to$ GAP $\to$ FC
+ \item \textbf{Khối FR-PDP}: Pw1 (không BN/act) $\to$ Dw$3{\times}3$ $\to$ Pw2
+ \item \textbf{Full-Residual}: nhánh PwR khi $s{=}2$ hoặc đổi số kênh, ngược lại identity
+ \item \textbf{SE} (cổng kênh toàn cục) $\to$ tái sử dụng làm nhánh kênh của TASA
+ \item Khởi tạo Kaiming cho Conv
+\end{itemize}}{tick}
+\lineagecard{15.1}{colNet}{Kế thừa từ NetTOP (N)}{%
+\begin{itemize}[leftmargin=1.1em,nosep,itemsep=3pt]
+ \item \textbf{Ý tưởng đa mặt phẳng} $(xy,\,xz,\,yz)$: xử lý đặc trưng theo nhiều trục thay vì chỉ không gian
+ \item \textbf{Cổng nhân} dạng $\mathrm{ReLU}(a\odot\sigma(b\odot c))$
+ \item \textbf{Conv$1{\times}1$ nhóm} (\texttt{groups}) giảm tham số $\to$ dùng cho Pw1 khi $C\ge192$
+ \item Mỗi block: Residual $+$ SE
+\end{itemize}}{net}
+\lineagecard{25.3}{colAtt}{Kế thừa từ FullAttNet (F)}{%
+\begin{itemize}[leftmargin=1.1em,nosep,itemsep=3pt]
+ \item \textbf{Multi-stride Dw} + nội suy \textit{nearest} (Dw1/Dw2 $\to$ Upsample)
+ \item \textbf{Cổng nhân đa tỉ lệ} $\mathrm{ReLU}(x_1\odot\sigma(x_2\odot x_3))$
+ \item \textbf{Thống kê bậc 1--2} (avg/std) và attention theo 3 trục
+ \item \textbf{Dropout2d} $p{=}0.2$ trước/sau GAP; \texttt{width\_multiplier}
+\end{itemize}}{att}
+\lineagecard{35.5}{colNew}{Đóng góp MỚI của TriDiffNet}{%
+\begin{itemize}[leftmargin=1.1em,nosep,itemsep=3pt]
+ \item \textbf{TASA}: strip pooling mean$\oplus$std theo $H$/$W$ + Conv 1D ($3{\times}1$, $1{\times}3$) + cộng broadcast $\to$ cổng không gian
+ \item \textbf{TensorDiff3D}: sai phân rời rạc $\Delta_H,\Delta_W,\Delta_C$ + $\tanh$ + $\alpha$ học được (khởi tạo 0)
+ \item \textbf{Độc lập độ phân giải}: bỏ các bank MLP theo kích thước (112/56/28/\ldots) của FullAttNet
+ \item \textbf{Rút gọn} 3 $\to$ 2 nhánh Dw: $\mathrm{ReLU}(x_1\odot\sigma(x_2))$
+ \item Cấu hình \textit{compact}/\textit{ultra} $\approx$1,5M / 1,05M tham số
+\end{itemize}}{newc}
+
+\end{tikzpicture}
+\end{document}
