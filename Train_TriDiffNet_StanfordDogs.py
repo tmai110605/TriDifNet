@@ -146,9 +146,9 @@ def run_epoch(train, data_loader, model, criterion, optimizer, n_epoch, args, de
             loss.backward()
             optimizer.step()
 
-        if (n_batch % 10) == 0:
-            mode_str = 'train' if train else ' val '
-            print(f'[{mode_str}] epoch {n_epoch + 1}/{args.epochs}, batch {n_batch + 1}/{batch_count}, loss={loss_item:.5f}, top1={100.0 * acc1:.2f}%, top5={100.0 * acc5:.2f}%')
+        #if (n_batch % 10) == 0:
+         #   mode_str = 'train' if train else ' val '
+            #print(f'[{mode_str}] epoch {n_epoch + 1}/{args.epochs}, batch {n_batch + 1}/{batch_count}, loss={loss_item:.5f}, top1={100.0 * acc1:.2f}%, top5={100.0 * acc5:.2f}%')
 
     return (sum(losses) / len(losses), sum(accs1) / len(accs1), sum(accs5) / len(accs5))
 
