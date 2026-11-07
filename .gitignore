@@ -1,0 +1,16 @@
+# Dataset
+data/*.tar
+data/*.mat
+
+# Python
+__pycache__/
+*.pyc
+
+# Checkpoints
+*.pth
+*.pt
+*.onnx
+
+# Logs
+runs/
+logs/
