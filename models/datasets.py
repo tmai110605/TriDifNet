@@ -20,13 +20,13 @@ class StanfordDogs(torchvision.datasets.VisionDataset):
     
     sources = (
         {
-            "url": "http://vision.stanford.edu/aditya86/ImageNetDogs/images.tar",
+            "url": "https://web.archive.org/web/20250724000413id_/http://vision.stanford.edu/aditya86/ImageNetDogs/images.tar",
             "md5": "1bb1f2a596ae7057f99d7d75860002ef",
             "filename": "images.tar",
             "extracted_filenames": ("Images",),
         },
         {
-            "url": "http://vision.stanford.edu/aditya86/ImageNetDogs/lists.tar",
+            "url": "https://web.archive.org/web/20241221112710id_/http://vision.stanford.edu/aditya86/ImageNetDogs/lists.tar",
             "md5": "edbb9f16854ec66506b5f09b583e0656",
             "filename": "lists.tar",
             "extracted_filenames": ("file_list.mat", "test_list.mat", "train_list.mat"),

@@ -93,7 +93,7 @@ def get_data_loader(args, train):
         raise NotImplementedError(f"Can't determine data loader for dataset '{args.dataset}'")
 
     # Instantiate dataset with automatic download support
-    dataset = dataset_class(root=data_root, train=train, download=True, transform=transform)
+    dataset = dataset_class(root=data_root, train=train, download=False, transform=transform)
     return torch.utils.data.DataLoader(
         dataset,
         batch_size=args.batch_size,
