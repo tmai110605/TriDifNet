@@ -15,16 +15,18 @@ class TriDiffBlock2(nn.Module):
     strip-attention overhead.
     - Multi-scale / Multi-stride depthwise feature extraction (MuS)
     - Full-Residual (FR) identity mapping preserving gradient flow
-    - 3D Tensor Differential Operator only (TASA removed)
+    - 3D Tensor Differential Operator (optional, controlled by use_diff flag)
     """
     def __init__(self,
                  in_channels,
                  out_channels,
-                 stride=1):
+                 stride=1,
+                 use_diff=True):
         super(TriDiffBlock2, self).__init__()
         self.stride = stride
         self.in_channels = in_channels
         self.out_channels = out_channels
+        self.use_diff = use_diff
 
         # 1. Pointwise projection (groups=2 for C >= 192 to bound parameter complexity)
         groups_pw1 = 2 if (in_channels >= 192 and in_channels % 2 == 0) else 1
@@ -44,8 +46,9 @@ class TriDiffBlock2(nn.Module):
         # 3. Output Pointwise convolution
         self.pw2 = conv1x1_block(in_channels=in_channels, out_channels=out_channels)
 
-        # 4. 3D Tensor Differential Operator (replaces full TriDiffModule)
-        self.diff = TensorDiff3D(out_channels)
+        # 4. 3D Tensor Differential Operator (optional ablation component)
+        if self.use_diff:
+            self.diff = TensorDiff3D(out_channels)
 
         # 5. Full-Residual Connection
         if stride != 1 or in_channels != out_channels:
@@ -77,8 +80,9 @@ class TriDiffBlock2(nn.Module):
         # Pw2
         x = self.pw2(x)
 
-        # 3D Tensor Differential enhancement (identity + gradient field)
-        x = x + self.diff(x)
+        # 3D Tensor Differential enhancement (skipped if use_diff=False)
+        if self.use_diff:
+            x = x + self.diff(x)
 
         # Full-Residual Connection
         if self.pointwise_residual is not None:
@@ -92,6 +96,7 @@ class TriDiffNet2(nn.Module):
     TriDiffNet2: ablation variant of TriDiffNet with TASA removed.
     Retains the full MuS depthwise structure and Full-Residual connections
     of TriDiffNet; replaces TriDiffModule with TensorDiff3D only.
+    Set use_diff=False to disable TensorDiff3D entirely for further ablation.
     """
     def __init__(self,
                  num_classes,
@@ -102,12 +107,14 @@ class TriDiffNet2(nn.Module):
                  in_channels=3,
                  in_size=(224, 224),
                  use_data_batchnorm=True,
+                 use_diff=True,
                  dropout_rate=0.2,
                  final_conv_channels=512):
         super(TriDiffNet2, self).__init__()
         self.in_size = in_size
         self.use_data_batchnorm = use_data_batchnorm
         self.final_conv_channels = final_conv_channels
+        self.use_diff = use_diff
 
         self.backbone = nn.Sequential()
 
@@ -137,6 +144,7 @@ class TriDiffNet2(nn.Module):
                         in_channels=current_channels,
                         out_channels=unit_channels,
                         stride=stride,
+                        use_diff=use_diff,
                     )
                 )
                 current_channels = unit_channels
@@ -187,11 +195,13 @@ def build_TriDiffNet(num_classes,
                       typesize='compact',
                       cifar=False,
                       width_multiplier=1.0,
+                      use_diff=True,
                       dropout_rate=0.2):
     """
     Factory function for TriDiffNet2:
-    - 'compact': Harmonic Pyramidal Progression (~1.04M params, same schedule as TriDiffNet compact)
-    - 'ultra':   Ultra-compact edge configuration (~720K params)
+    - 'compact': Harmonic Pyramidal Progression (~1.04M params with use_diff=True, ~1.03M without)
+    - 'ultra':   Ultra-compact edge configuration (~720K / ~719K params)
+    - use_diff:  Toggle TensorDiff3D in every block (True=enabled, False=pure MuS-FR baseline)
     """
     init_conv_channels = 32
 
@@ -239,6 +249,7 @@ def build_TriDiffNet(num_classes,
         channels=channels,
         strides=strides,
         in_size=in_size,
+        use_diff=use_diff,
         dropout_rate=dropout_rate,
         final_conv_channels=final_conv_channels
     )

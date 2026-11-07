@@ -62,6 +62,10 @@ parser.add_argument('--gpu', default=None, type=int,
                     help='GPU id to use.')
 parser.add_argument('--smoothing', default=0.1, type=float,
                     help='Label smoothing factor (default: 0.1).')
+parser.add_argument('--use-diff', dest='use_diff', action='store_true', default=True,
+                    help='Enable TensorDiff3D in every block (default: enabled).')
+parser.add_argument('--no-diff', dest='use_diff', action='store_false',
+                    help='Disable TensorDiff3D — pure MuS-FR baseline for ablation.')
 
 best_acc1 = 0
 
@@ -89,8 +93,8 @@ def main():
     else:
         typesize = 'compact'
 
-    print(f"=> Creating model '{args.arch}' with typesize '{typesize}'")
-    model = build_TriDiffNet(num_classes=1000, typesize=typesize, cifar=False)
+    print(f"=> Creating model '{args.arch}' with typesize '{typesize}', use_diff={args.use_diff}")
+    model = build_TriDiffNet(num_classes=1000, typesize=typesize, cifar=False, use_diff=args.use_diff)
 
     if args.gpu is not None and torch.cuda.is_available():
         torch.cuda.set_device(args.gpu)

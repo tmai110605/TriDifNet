@@ -38,6 +38,10 @@ def get_args():
     parser.add_argument('-m', '--momentum', default=0.9, type=float, help='SGD momentum.')
     parser.add_argument('-w', '--weight-decay', default=1e-4, type=float, help='SGD weight decay.')
     parser.add_argument('--smoothing', default=0.1, type=float, help='Label smoothing factor (default: 0.1).')
+    parser.add_argument('--use-diff', dest='use_diff', action='store_true', default=True,
+                        help='Enable TensorDiff3D in every block (default: enabled).')
+    parser.add_argument('--no-diff', dest='use_diff', action='store_false',
+                        help='Disable TensorDiff3D — pure MuS-FR baseline for ablation.')
     parser.add_argument('--evaluate', dest='evaluate', action='store_true', help='Evaluate model on validation set.')
     parser.add_argument('--checkpoint', type=str, default='', help='Path to checkpoint for evaluation.')
     return parser.parse_args()
@@ -162,7 +166,8 @@ def main():
     # torch.autograd.set_detect_anomaly(True)  # Disabled for maximum GPU training throughput
 
     dataset_name = 'StanfordDogs' if args.dataset == 'dogs' else args.dataset.upper()
-    strmode = f'{dataset_name}_TriDiffNet_{args.typesize}'
+    diff_tag = 'diff' if args.use_diff else 'nodiff'
+    strmode = f'{dataset_name}_TriDiffNet_{args.typesize}_{diff_tag}'
     pathout = os.path.join('./checkpoints', strmode)
     filenameLOG = os.path.join(pathout, f'{strmode}.txt')
     if not os.path.exists(pathout):
@@ -176,9 +181,11 @@ def main():
         num_classes=num_classes,
         typesize=args.typesize,
         cifar=cifar,
+        use_diff=args.use_diff,
         dropout_rate=0.2
     )
     model = model.to(device)
+    print(f'[Config] use_diff={args.use_diff}')
     print(model)
 
     params_count = sum(p.data.nelement() for p in model.parameters() if p.requires_grad)
